@@ -5,7 +5,7 @@ provider "aws" {
 
 module "static_site" {
   source              = "../../modules/static_site"
-  bucket_name         = "fsl-static-site-dev"
-  logging_bucket_name = "fsl-static-site-dev-logs"
+  bucket_name         = "cloudfront-s3-static-site-dev"
+  logging_bucket_name = "cloudfront-s3-static-site-dev-logs"
   env                 = "dev"
 }
