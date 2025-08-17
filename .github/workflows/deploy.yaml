@@ -2,10 +2,14 @@ name: Deploy to S3
 
 on:
   push:
-    branches:
-      - dev
-      - staging
-      - main
+    branches: [dev, staging, main]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - '*.json'
+      - '*.js'
+      - '*.jsx'
+      - '!terraform/**'
 
 jobs:
   deploy:
@@ -15,7 +19,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 15
@@ -23,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build the React app
+      - name: Build the app
         run: npm run build
 
       - name: Configure AWS credentials
@@ -33,14 +37,15 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Deploy to S3
+      - name: Deploy build/ to S3
         run: |
           BRANCH=$(echo "${GITHUB_REF##*/}")
+
           case "$BRANCH" in
-            dev) BUCKET="fsl-static-site-dev" ;;
-            staging) BUCKET="fsl-static-site-staging" ;;
-            main) BUCKET="fsl-static-site-prod" ;;
-            *) echo "Invalid branch"; exit 1 ;;
+            dev) BUCKET="cloudfront-s3-static-site-dev" ;;
+            staging) BUCKET="cloudfront-s3-static-site-staging" ;;
+            main) BUCKET="cloudfront-s3-static-site-prod" ;;
+            *) echo "Unsupported branch: $BRANCH" && exit 1 ;;
           esac
 
           aws s3 sync build/ s3://$BUCKET --delete
