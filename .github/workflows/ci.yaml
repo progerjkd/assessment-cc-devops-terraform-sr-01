@@ -3,6 +3,13 @@ name: CI Pipeline
 on:
   pull_request:
     branches: [dev, staging, main]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - '*.json'
+      - '*.js'
+      - '*.jsx'
+      - '!terraform/**'
 
 jobs:
   build:
