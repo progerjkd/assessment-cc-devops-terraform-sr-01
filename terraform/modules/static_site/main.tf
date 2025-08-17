@@ -1,11 +1,17 @@
-
 resource "aws_s3_bucket" "site" {
-  bucket = var.bucket_name
-  acl    = "public-read"
+  bucket        = var.bucket_name
+  force_destroy = true
+}
 
-  website {
-    index_document = "index.html"
-    error_document = "index.html"
+resource "aws_s3_bucket_website_configuration" "site_website" {
+  bucket = aws_s3_bucket.site.id
+
+  index_document {
+    suffix = "index.html"
+  }
+
+  error_document {
+    key = "index.html"
   }
 }
 
@@ -14,25 +20,24 @@ resource "aws_s3_bucket_policy" "site_policy" {
 
   policy = jsonencode({
     Version = "2012-10-17",
-    Statement = [
-      {
-        Effect    = "Allow",
-        Principal = "*",
-        Action    = "s3:GetObject",
-        Resource  = "${aws_s3_bucket.site.arn}/*"
-      }
-    ]
+    Statement = [{
+      Effect    = "Allow",
+      Principal = "*",
+      Action    = "s3:GetObject",
+      Resource  = "${aws_s3_bucket.site.arn}/*"
+    }]
   })
 }
 
 resource "aws_s3_bucket" "logs" {
-  bucket = var.logging_bucket_name
+  bucket        = var.logging_bucket_name
+  force_destroy = true
 }
 
 resource "aws_cloudfront_distribution" "cdn" {
   origin {
-    domain_name = aws_s3_bucket.site.website_endpoint
-    origin_id   = "s3-origin"
+    domain_name = aws_s3_bucket_website_configuration.site_website.website_endpoint
+    origin_id   = "s3-site-origin"
 
     custom_origin_config {
       http_port              = 80
@@ -49,7 +54,7 @@ resource "aws_cloudfront_distribution" "cdn" {
   default_cache_behavior {
     allowed_methods  = ["GET", "HEAD"]
     cached_methods   = ["GET", "HEAD"]
-    target_origin_id = "s3-origin"
+    target_origin_id = "s3-site-origin"
 
     forwarded_values {
       query_string = false
@@ -61,10 +66,16 @@ resource "aws_cloudfront_distribution" "cdn" {
     viewer_protocol_policy = "redirect-to-https"
   }
 
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+
   logging_config {
     include_cookies = false
-    bucket          = "${aws_s3_bucket.logs.bucket_regional_domain_name}"
-    prefix          = "logs/"
+    bucket          = aws_s3_bucket.logs.bucket_domain_name
+    prefix          = "cloudfront-logs/"
   }
 
   viewer_certificate {
@@ -73,7 +84,7 @@ resource "aws_cloudfront_distribution" "cdn" {
 }
 
 output "s3_website_url" {
-  value = aws_s3_bucket.site.website_endpoint
+  value = aws_s3_bucket_website_configuration.site_website.website_endpoint
 }
 
 output "cloudfront_domain_name" {
