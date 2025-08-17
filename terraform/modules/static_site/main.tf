@@ -1,6 +1,14 @@
 resource "aws_s3_bucket" "site" {
-  bucket        = var.bucket_name
-  force_destroy = true
+  bucket           = var.bucket_name
+  force_destroy    = true
+  object_ownership = "ObjectWriter"
+
+  public_access_block {
+    block_public_acls       = false
+    block_public_policy     = false
+    ignore_public_acls      = false
+    restrict_public_buckets = false
+  }
 }
 
 resource "aws_s3_bucket_website_configuration" "site_website" {
@@ -30,8 +38,17 @@ resource "aws_s3_bucket_policy" "site_policy" {
 }
 
 resource "aws_s3_bucket" "logs" {
-  bucket        = var.logging_bucket_name
-  force_destroy = true
+  bucket           = var.logging_bucket_name
+  force_destroy    = true
+  acl              = "log-delivery-write"
+  object_ownership = "ObjectWriter"
+
+  public_access_block {
+    block_public_acls       = false
+    block_public_policy     = false
+    ignore_public_acls      = false
+    restrict_public_buckets = false
+  }
 }
 
 resource "aws_cloudfront_distribution" "cdn" {
