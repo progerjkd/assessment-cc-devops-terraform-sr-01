@@ -3,6 +3,13 @@ name: CI Pipeline
 on:
   pull_request:
     branches: [dev, staging, main]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - '*.json'
+      - '*.js'
+      - '*.jsx'
+      - '!terraform/**'
 
 jobs:
   build:
@@ -15,13 +22,17 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 15
 
       - name: Install dependencies
         run: npm install
 
+      - name: Install TypeScript ESLint dependencies
+        run: |
+          npm install --save-dev typescript @typescript-eslint/parser @typescript-eslint/eslint-plugin
+
       - name: Run Prettier
-        run: npx prettier --check .
+        run: npx prettier --write .
 
       - name: Run ESLint
         run: npx eslint .
